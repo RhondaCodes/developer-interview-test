@@ -1,21 +1,27 @@
 ﻿using Smartwyre.DeveloperTest.Data;
 using Smartwyre.DeveloperTest.Types;
-using System.Configuration;
 
 namespace Smartwyre.DeveloperTest.Services
 {
     public class PaymentService : IPaymentService
     {
+        private readonly IAccountDataStore _accountDataStore;
+
+        public PaymentService(IAccountDataStore accountDataStore) 
+        { 
+            _accountDataStore= accountDataStore;
+        }
+
         public MakePaymentResult MakePayment(MakePaymentRequest request)
         {
-            var accountDataStoreGetData = new AccountDataStore();
-            Account account = accountDataStoreGetData.GetAccount(request.DebtorAccountNumber);
+            Account account = _accountDataStore.GetAccount(request.DebtorAccountNumber);
             
             var result = new MakePaymentResult();
 
             switch (request.PaymentScheme)
             {
                 case PaymentScheme.BankToBankTransfer:
+                    result.Success = true;
                     if (account == null)
                     {
                         result.Success = false;
@@ -27,6 +33,7 @@ namespace Smartwyre.DeveloperTest.Services
                     break;
 
                 case PaymentScheme.ExpeditedPayments:
+                    result.Success = true;
                     if (account == null)
                     {
                         result.Success = false;
@@ -42,6 +49,7 @@ namespace Smartwyre.DeveloperTest.Services
                     break;
 
                 case PaymentScheme.AutomatedPaymentSystem:
+                    result.Success = true;
                     if (account == null)
                     {
                         result.Success = false;
@@ -61,8 +69,7 @@ namespace Smartwyre.DeveloperTest.Services
             {
                 account.Balance -= request.Amount;
 
-                var accountDataStoreUpdateData = new AccountDataStore();
-                accountDataStoreUpdateData.UpdateAccount(account);
+                _accountDataStore.UpdateAccount(account);
             }
 
             return result;
