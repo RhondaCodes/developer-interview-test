@@ -14,56 +14,16 @@ namespace Smartwyre.DeveloperTest.Services
 
         public MakePaymentResult MakePayment(MakePaymentRequest request)
         {
+            var result = new MakePaymentResult();
             Account account = _accountDataStore.GetAccount(request.DebtorAccountNumber);
             
-            var result = new MakePaymentResult();
+            if (account == null) { return result; }
 
-            switch (request.PaymentScheme)
-            {
-                case PaymentScheme.BankToBankTransfer:
-                    result.Success = true;
-                    if (account == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!account.AllowedPaymentSchemes.HasFlag(AllowedPaymentSchemes.BankToBankTransfer))
-                    {
-                        result.Success = false;
-                    }
-                    break;
+            var paymentType = PaymentTypeFactory.Create(account, request);
 
-                case PaymentScheme.ExpeditedPayments:
-                    result.Success = true;
-                    if (account == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!account.AllowedPaymentSchemes.HasFlag(AllowedPaymentSchemes.ExpeditedPayments))
-                    {
-                        result.Success = false;
-                    }
-                    else if (account.Balance < request.Amount)
-                    {
-                        result.Success = false;
-                    }
-                    break;
+            if(paymentType == null) { return result; }
 
-                case PaymentScheme.AutomatedPaymentSystem:
-                    result.Success = true;
-                    if (account == null)
-                    {
-                        result.Success = false;
-                    }
-                    else if (!account.AllowedPaymentSchemes.HasFlag(AllowedPaymentSchemes.AutomatedPaymentSystem))
-                    {
-                        result.Success = false;
-                    }
-                    else if (account.Status != AccountStatus.Live)
-                    {
-                        result.Success = false;
-                    }
-                    break;
-            }
+            result = paymentType.GetResult();
 
             if (result.Success)
             {
